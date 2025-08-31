@@ -4,6 +4,7 @@ Data encryption utilities for sensitive risk information
 
 import base64
 import logging
+import os
 from cryptography.fernet import Fernet
 from app.core.config import settings
 
@@ -13,9 +14,17 @@ class DataEncryption:
     """Simple encryption for sensitive data"""
     
     def __init__(self):
-        # Use a fixed key for demo purposes - in production, use environment variable
-        # In production, you would use: settings.ENCRYPTION_KEY
-        self.key = b'your-32-byte-encryption-key-here!!'
+        # In production, use environment variable for the encryption key
+        key = getattr(settings, 'ENCRYPTION_KEY', None) or os.environ.get('ENCRYPTION_KEY')
+        if not key:
+            raise ValueError("Encryption key not set. Please set ENCRYPTION_KEY in environment or settings.")
+        if isinstance(key, str):
+            key_bytes = key.encode()
+        else:
+            key_bytes = key
+        if len(key_bytes) != 32:
+            raise ValueError("ENCRYPTION_KEY must be 32 bytes.")
+        self.key = key_bytes
         self.cipher = Fernet(base64.urlsafe_b64encode(self.key))
     
     def encrypt_data(self, data: str) -> str:
