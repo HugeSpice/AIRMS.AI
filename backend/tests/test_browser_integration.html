@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend-Backend Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .warning { color: #fbbf24; }
+        .info { color: #60a5fa; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #6b7280; cursor: not-allowed; }
+        .result {
+            background: #1f1f1f;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success { background: #065f46; color: #d1fae5; }
+        .status.error { background: #7f1d1d; color: #fee2e2; }
+        .status.warning { background: #92400e; color: #fef3c7; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Frontend-Backend Integration Test</h1>
+    <p class="info">This page tests the communication between frontend and backend APIs</p>
+
+    <div class="test-section">
+        <h2>🔍 Backend Health Check</h2>
+        <button onclick="testBackendHealth()">Test Backend Health</button>
+        <div id="healthResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Analytics API Test</h2>
+        <p class="warning">Note: This will fail with 401/403 as expected (authentication required)</p>
+        <button onclick="testAnalyticsAPI()">Test Analytics API</button>
+        <div id="analyticsResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔑 API Keys API Test</h2>
+        <p class="warning">Note: This will fail with 401/403 as expected (authentication required)</p>
+        <button onclick="testAPIKeysAPI()">Test API Keys API</button>
+        <div id="apiKeysResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>⚠️ Risk Detection API Test</h2>
+        <p class="warning">Note: This will fail with 405 as expected (POST method required)</p>
+        <button onclick="testRiskAPI()">Test Risk API</button>
+        <div id="riskResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🌐 CORS Test</h2>
+        <button onclick="testCORS()">Test CORS Configuration</button>
+        <div id="corsResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Test Summary</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="summaryResult" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8000';
+        const FRONTEND_URL = 'http://localhost:3000';
+        
+        let testResults = {};
+
+        function showResult(elementId, content, status = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.innerHTML = content;
+            element.className = `result ${status}`;
+        }
+
+        function getStatusBadge(status, text) {
+            return `<span class="status ${status}">${text}</span>`;
+        }
+
+        async function testBackendHealth() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const result = `
+${getStatusBadge('success', 'SUCCESS')} Backend Health Check
+Status Code: ${response.status}
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('healthResult', result, 'success');
+                    testResults.health = { success: true, data };
+                } else {
+                    const result = `
+${getStatusBadge('error', 'FAILED')} Backend Health Check
+Status Code: ${response.status}
+Error: ${data.detail || 'Unknown error'}
+                    `;
+                    showResult('healthResult', result, 'error');
+                    testResults.health = { success: false, error: data.detail };
+                }
+            } catch (error) {
+                const result = `
+${getStatusBadge('error', 'ERROR')} Backend Health Check
+Error: ${error.message}
+                `;
+                showResult('healthResult', result, 'error');
+                testResults.health = { success: false, error: error.message };
+            }
+        }
+
+        async function testAnalyticsAPI() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/v1/analytics/statistics?days=7`);
+                const data = await response.json();
+                
+                if (response.status === 401 || response.status === 403) {
+                    const result = `
+${getStatusBadge('success', 'EXPECTED')} Analytics API Test
+Status Code: ${response.status} (Authentication Required - This is correct!)
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('analyticsResult', result, 'success');
+                    testResults.analytics = { success: true, expected: true, status: response.status };
+                } else if (response.status === 405) {
+                    const result = `
+${getStatusBadge('success', 'EXPECTED')} Analytics API Test
+Status Code: ${response.status} (Method Not Allowed - This is correct!)
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('analyticsResult', result, 'success');
+                    testResults.analytics = { success: true, expected: true, status: response.status };
+                } else {
+                    const result = `
+${getStatusBadge('warning', 'UNEXPECTED')} Analytics API Test
+Status Code: ${response.status} (Unexpected - should require auth or method not allowed)
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('analyticsResult', result, 'warning');
+                    testResults.analytics = { success: false, expected: false, status: response.status };
+                }
+            } catch (error) {
+                const result = `
+${getStatusBadge('error', 'ERROR')} Analytics API Test
+Error: ${error.message}
+                `;
+                showResult('analyticsResult', result, 'error');
+                testResults.analytics = { success: false, error: error.message };
+            }
+        }
+
+        async function testAPIKeysAPI() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/v1/api-keys`);
+                const data = await response.json();
+                
+                if (response.status === 401 || response.status === 403) {
+                    const result = `
+${getStatusBadge('success', 'EXPECTED')} API Keys API Test
+Status Code: ${response.status} (Authentication Required - This is correct!)
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('apiKeysResult', result, 'success');
+                    testResults.apiKeys = { success: true, expected: true, status: response.status };
+                } else if (response.status === 405) {
+                    const result = `
+${getStatusBadge('success', 'EXPECTED')} API Keys API Test
+Status Code: ${response.status} (Method Not Allowed - This is correct!)
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('apiKeysResult', result, 'success');
+                    testResults.apiKeys = { success: true, expected: false, status: response.status };
+                } else {
+                    const result = `
+${getStatusBadge('warning', 'UNEXPECTED')} API Keys API Test
+Status Code: ${response.status} (Unexpected - should require auth or method not allowed)
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('apiKeysResult', result, 'warning');
+                    testResults.apiKeys = { success: false, expected: false, status: response.status };
+                }
+            } catch (error) {
+                const result = `
+${getStatusBadge('error', 'ERROR')} API Keys API Test
+Error: ${error.message}
+                `;
+                showResult('apiKeysResult', result, 'error');
+                testResults.apiKeys = { success: false, error: error.message };
+            }
+        }
+
+        async function testRiskAPI() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/v1/risk/analyze`);
+                const data = await response.json();
+                
+                if (response.status === 405) {
+                    const result = `
+${getStatusBadge('success', 'EXPECTED')} Risk API Test
+Status Code: ${response.status} (Method Not Allowed - This is correct! POST required)
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('riskResult', result, 'success');
+                    testResults.risk = { success: true, expected: true, status: response.status };
+                } else {
+                    const result = `
+${getStatusBadge('warning', 'UNEXPECTED')} Risk API Test
+Status Code: ${response.status} (Unexpected - should return 405 for GET)
+Response: ${JSON.stringify(data, null, 2)}
+                    `;
+                    showResult('riskResult', result, 'warning');
+                    testResults.risk = { success: false, expected: false, status: response.status };
+                }
+            } catch (error) {
+                const result = `
+${getStatusBadge('error', 'ERROR')} Risk API Test
+Error: ${error.message}
+                `;
+                showResult('riskResult', result, 'error');
+                testResults.risk = { success: false, error: error.message };
+            }
+        }
+
+        async function testCORS() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': FRONTEND_URL,
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+                
+                if (response.ok) {
+                    const corsHeaders = response.headers;
+                    const result = `
+${getStatusBadge('success', 'SUCCESS')} CORS Test
+Status Code: ${response.status}
+Access-Control-Allow-Origin: ${corsHeaders.get('Access-Control-Allow-Origin') || 'Not set'}
+Access-Control-Allow-Methods: ${corsHeaders.get('Access-Control-Allow-Methods') || 'Not set'}
+                    `;
+                    showResult('corsResult', result, 'success');
+                    testResults.cors = { success: true, headers: corsHeaders };
+                } else {
+                    const result = `
+${getStatusBadge('error', 'FAILED')} CORS Test
+Status Code: ${response.status}
+                    `;
+                    showResult('corsResult', result, 'error');
+                    testResults.cors = { success: false, status: response.status };
+                }
+            } catch (error) {
+                const result = `
+${getStatusBadge('error', 'ERROR')} CORS Test
+Error: ${error.message}
+                `;
+                showResult('corsResult', result, 'error');
+                testResults.cors = { success: false, error: error.message };
+            }
+        }
+
+        async function runAllTests() {
+            testResults = {};
+            
+            // Run all tests
+            await testBackendHealth();
+            await testAnalyticsAPI();
+            await testAPIKeysAPI();
+            await testRiskAPI();
+            await testCORS();
+            
+            // Generate summary
+            const summary = generateSummary();
+            showResult('summaryResult', summary, 'info');
+        }
+
+        function generateSummary() {
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(r => r.success).length;
+            const failedTests = totalTests - passedTests;
+            
+            let summary = `
+${getStatusBadge('info', 'TEST SUMMARY')}
+Total Tests: ${totalTests}
+Passed: ${passedTests}
+Failed: ${failedTests}
+
+Detailed Results:
+`;
+            
+            for (const [testName, result] of Object.entries(testResults)) {
+                const status = result.success ? '✅' : '❌';
+                const details = result.expected ? ' (Expected)' : '';
+                summary += `${status} ${testName}: ${result.success ? 'PASS' : 'FAIL'}${details}\n`;
+            }
+            
+            summary += `
+🎯 Next Steps:
+1. Open ${FRONTEND_URL} in your browser
+2. Navigate to /dashboard to see real data
+3. Check /dashboard/api-keys for API key management
+4. Test /dashboard/risk-detection for risk analysis
+            `;
+            
+            return summary;
+        }
+
+        // Auto-run health check on page load
+        window.addEventListener('load', () => {
+            testBackendHealth();
+        });
+    </script>
+</body>
+</html>

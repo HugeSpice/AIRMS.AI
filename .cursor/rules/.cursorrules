@@ -1,0 +1,44 @@
+# Cursor Rules for Risk Agent API Project
+
+version: 1
+
+project:
+  name: "Risk Agent API"
+  description: >
+    An OpenAI-compatible API service with a middleware Risk Detection
+    & Mitigation Agent. It sanitizes sensitive data before sending it
+    to the LLM (Groq / OpenAI / Anthropic / etc.), applies post-response
+    risk checks, and logs results for a developer dashboard.
+
+workflow:
+  - Always check `.cursorrules` and `spec.md` for context before generating code.
+  - When building API routes, follow the **OpenAI API style** (v1/chat/completions).
+  - Write backend in Python (FastAPI).
+  - Use Groq API as first LLM provider but design for multi-provider.
+  - Store API keys and risk logs in Supabase (fallback: SQLite for local dev).
+  - Use `update_supabase.py` for schema updates.
+
+files:
+  - main.py: FastAPI app (auth, risk agent, Groq integration).
+  - spec.md: High-level system design spec.
+  - dashboard/: Next.js app for developer dashboard.
+  - update_supabase.py: Handles schema migrations & relation updates.
+  - tests/: Unit + integration tests.
+
+guidelines:
+  - Always sanitize inputs (emails, phones, addresses, etc.).
+  - Redact sensitive data before LLM calls.
+  - Keep logs with risk scores but never show raw PII in dashboard or API response.
+  - Maintain OpenAI-compatible JSON response structure.
+  - Write modular and extensible code for adding new LLM providers or data connectors.
+
+testing:
+  - Mock LLM with dummy response for local testing.
+  - Unit test sanitization and auth logic.
+  - Integration test full request → risk agent → LLM → response.
+  - Ensure sanitized payload ≠ raw payload when PII present.
+
+extension:
+  - Add connectors (Postgres, MySQL, MongoDB) so devs can link their own DB.
+  - Expand Risk Agent with more PII types (credit cards, SSNs, etc.).
+  - Add analytics dashboard with charts for PII detections and usage.

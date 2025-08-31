@@ -1,0 +1,110 @@
+#lights {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: #000000;
+}
+
+#lights canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Ensure proper aspect ratio and responsiveness */
+#lights {
+  min-height: 300px;
+}
+
+/* Prevent context menu on mobile */
+#lights * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Loading state */
+#lights.loading {
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#lights.loading::before {
+  content: "";
+  width: 40px;
+  height: 40px;
+  border: 3px solid #333;
+  border-top: 3px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Fullscreen styles */
+#lights.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  #lights {
+    touch-action: manipulation;
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  #lights canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  #lights {
+    animation: none;
+  }
+  
+  #lights * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus states for accessibility */
+#lights:focus {
+  outline: 2px solid #0099ff;
+  outline-offset: 2px;
+}
+
+#lights:focus:not(:focus-visible) {
+  outline: none;
+}
+
+#lights:focus-visible {
+  outline: 2px solid #0099ff;
+  outline-offset: 2px;
+}
